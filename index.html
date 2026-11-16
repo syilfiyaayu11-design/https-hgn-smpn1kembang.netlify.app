@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Voting Hari Guru Nasional - SMPN 1 Kembang</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        h1, h2, h3, .font-heading {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Custom Modal Container -->
+    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+        <div id="modal-content" class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all scale-95 opacity-0">
+            <!-- Modal dynamic content -->
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold shadow-md">
+                    <i data-lucide="award" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-heading font-bold text-slate-900 text-base sm:text-lg leading-tight">HGN SMPN 1 Kembang</h1>
+                    <p class="text-xs text-slate-500 font-medium">Sistem Apresiasi & Pemilihan Guru Favorit</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Sync Status Indicator -->
+                <div id="sync-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="sync-text">Tersinkronisasi</span>
+                </div>
+
+                <!-- User Session Info & Logout -->
+                <div id="nav-user-section" class="hidden items-center gap-3">
+                    <div class="text-right hidden md:block">
+                        <p id="nav-user-name" class="text-xs font-bold text-slate-800">Nama Pengguna</p>
+                        <p id="nav-user-role" class="text-[11px] text-slate-500 uppercase tracking-wider">Role</p>
+                    </div>
+                    <button onclick="handleLogout()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-semibold transition-colors">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                        <span>Keluar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col">
+
+        <!-- ==================== 1. HALAMAN LOGIN ==================== -->
+        <section id="view-login" class="flex-grow flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/50">
+            <div class="max-w-md w-full glass-card rounded-3xl shadow-xl p-6 sm:p-8 border border-slate-200/80">
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 mb-4">
+                        <i data-lucide="graduation-cap" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="font-heading text-2xl font-extrabold text-slate-900">Selamat Datang</h2>
+                    <p class="text-sm text-slate-500 mt-1">Pemilihan Guru Favorit Hari Guru Nasional<br><span class="font-semibold text-slate-700">SMP Negeri 1 Kembang</span></p>
+                </div>
+
+                <!-- Role Switcher Tabs -->
+                <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-xl mb-6">
+                    <button id="tab-student" onclick="switchLoginTab('student')" class="py-2.5 text-sm font-semibold rounded-lg bg-white text-blue-600 shadow-sm transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4"></i> Login Murid
+                    </button>
+                    <button id="tab-admin" onclick="switchLoginTab('admin')" class="py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i> Login Admin
+                    </button>
+                </div>
+
+                <!-- Form Login Murid -->
+                <form id="form-login-student" onsubmit="loginStudent(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Nama Lengkap Murid</label>
+                        <div class="relative">
+                            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+                            <input type="text" id="student-name" required placeholder="Masukkan nama lengkap" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Kelas</label>
+                        <div class="relative">
+                            <i data-lucide="book-open" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+                            <select id="student-class" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none">
+                                <option value="" disabled selected>Pilih Kelas Anda</option>
+                                <optgroup label="Kelas VII">
+                                    <option value="7A">7A</option><option value="7B">7B</option><option value="7C">7C</option>
+                                    <option value="7D">7D</option><option value="7E">7E</option><option value="7F">7F</option>
+                                    <option value="7G">7G</option><option value="7H">7H</option>
+                                </optgroup>
+                                <optgroup label="Kelas VIII">
+                                    <option value="8A">8A</option><option value="8B">8B</option><option value="8C">8C</option>
+                                    <option value="8D">8D</option><option value="8E">8E</option><option value="8F">8F</option>
+                                    <option value="8G">8G</option><option value="8H">8H</option>
+                                </optgroup>
+                                <optgroup label="Kelas IX">
+                                    <option value="9A">9A</option><option value="9B">9B</option><option value="9C">9C</option>
+                                    <option value="9D">9D</option><option value="9E">9E</option><option value="9F">9F</option>
+                                    <option value="9G">9G</option><option value="9H">9H</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 mt-2">
+                        <span>Masuk ke Bilik Suara</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </form>
+
+                <!-- Form Login Admin -->
+                <form id="form-login-admin" onsubmit="loginAdmin(event)" class="space-y-4 hidden">
+                    <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 flex items-start gap-3">
+                        <i data-lucide="lock" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+                        <p class="text-xs text-amber-800 leading-relaxed">Area khusus Panitia Hari Guru Nasional SMPN 1 Kembang. Masukkan PIN Otorisasi Administrator untuk mengelola data dan melihat hasil.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">PIN Keamanan Admin</label>
+                        <div class="relative">
+                            <i data-lucide="key-round" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+                            <input type="password" id="admin-pin" required maxlength="6" inputmode="numeric" placeholder="••••••" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-center tracking-[0.5em] font-bold text-lg focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 mt-2">
+                        <i data-lucide="shield" class="w-4 h-4"></i>
+                        <span>Buka Dasbor Admin</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ==================== 2. HALAMAN VOTE MURID ==================== -->
+        <section id="view-student" class="hidden max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Student Welcome Banner -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-8 relative overflow-hidden">
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-semibold backdrop-blur-sm mb-2">Selamat Hari Guru Nasional</span>
+                        <h2 class="font-heading text-2xl sm:text-3xl font-bold">Halo, <span id="display-student-name">Murid</span>!</h2>
+                        <p class="text-blue-100 text-sm mt-1">Kelas <span id="display-student-class" class="font-semibold"></span> • Pilih guru terbaik versimu untuk setiap kategori di bawah ini.</p>
+                    </div>
+                    <div id="student-vote-status-card" class="bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl p-4 shrink-0">
+                        <p class="text-xs text-blue-100 uppercase tracking-wider font-semibold">Status Hak Suara</p>
+                        <div id="student-status-indicator" class="flex items-center gap-2 mt-1">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                            <span class="font-bold text-sm">Belum Mengirim Pilihan</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notice when locked/already voted -->
+            <div id="student-locked-banner" class="hidden mb-8 bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center shadow-sm">
+                <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+                </div>
+                <h3 class="font-heading text-xl font-bold text-emerald-900">Terima Kasih! Suaramu Telah Tersimpan & Terkunci</h3>
+                <p class="text-sm text-emerald-700 max-w-xl mx-auto mt-1">Pilihan Anda sudah disinkronkan ke database panitia dan dikunci demi menjaga kejujuran pemilihan. Hasil perolehan suara bersifat rahasia dan hanya dapat diakses oleh Admin.</p>
+            </div>
+
+            <!-- Categories & Voting Cards Container -->
+            <div id="student-categories-container" class="space-y-8">
+                <!-- Rendered dynamically via JS -->
+            </div>
+
+            <!-- Submit Vote Action Bar -->
+            <div id="student-submit-bar" class="mt-10 bg-white border border-slate-200 rounded-2xl p-5 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 sticky bottom-4 z-20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold" id="vote-progress-count">0/0</div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">Progres Pemilihan Kategori</p>
+                        <p class="text-xs text-slate-500">Pastikan semua kategori telah dipilih sebelum mengunci suara.</p>
+                    </div>
+                </div>
+                <button onclick="confirmStudentVote()" id="btn-submit-vote" class="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Kirim & Kunci Pilihan Saya</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== 3. DASBOR ADMIN ==================== -->
+        <section id="view-admin" class="hidden max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Admin Header & Quick Stats -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900">Dasbor Administrator</h2>
+                        <span id="global-lock-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                            <i data-lucide="unlock" class="w-3 h-3"></i> Mode Edit Aktif
+                        </span>
+                    </div>
+                    <p class="text-sm text-slate-500 mt-1">Kelola kategori, data guru, sinkronisasi Google Spreadsheets, dan pantau hasil voting.</p>
+                </div>
+
+                <!-- Sync & Lock Controls -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <button onclick="syncWithSpreadsheet(true)" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2">
+                        <i data-lucide="refresh-cw" class="w-4 h-4" id="icon-sync-btn"></i>
+                        <span>Sinkronkan & Kunci Data</span>
+                    </button>
+                    <button onclick="toggleSystemLock()" id="btn-toggle-lock" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2">
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                        <span>Kunci Data Sistem</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Overview Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">Total Guru</p>
+                        <p class="text-2xl font-extrabold text-slate-900" id="stat-total-teachers">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="layers" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">Kategori Vote</p>
+                        <p class="text-2xl font-extrabold text-slate-900" id="stat-total-categories">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="vote" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">Murid Memilih</p>
+                        <p class="text-2xl font-extrabold text-slate-900" id="stat-total-voters">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="database" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">Database Sheet</p>
+                        <p class="text-sm font-bold text-slate-900 mt-0.5" id="stat-sheet-status">Siap (Lokal + Cloud)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Navigation Tabs -->
+            <div class="flex overflow-x-auto gap-2 border-b border-slate-200 pb-px mb-6">
+                <button onclick="switchAdminTab('results')" id="admin-tab-results" class="admin-nav-btn px-4 py-2.5 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Hasil Voting (Rahasia)
+                </button>
+                <button onclick="switchAdminTab('teachers')" id="admin-tab-teachers" class="admin-nav-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Data Guru
+                </button>
+                <button onclick="switchAdminTab('categories')" id="admin-tab-categories" class="admin-nav-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-2">
+                    <i data-lucide="folder-plus" class="w-4 h-4"></i> Kategori Pemilihan
+                </button>
+                <button onclick="switchAdminTab('spreadsheet')" id="admin-tab-spreadsheet" class="admin-nav-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-2">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Pengaturan Spreadsheets
+                </button>
+            </div>
+
+            <!-- TAB 1: HASIL VOTING (HANYA ADMIN) -->
+            <div id="admin-panel-results" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-indigo-50/70 border border-indigo-100 p-4 rounded-2xl">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="eye-off" class="w-5 h-5 text-indigo-600"></i>
+                        <p class="text-xs sm:text-sm text-indigo-900 font-medium">Data perolehan suara di bawah ini <strong>hanya dapat dilihat oleh Admin</strong> dan diperbarui secara real-time saat murid melakukan voting.</p>
+                    </div>
+                    <button onclick="exportResultsCSV()" class="px-4 py-2 bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 shrink-0">
+                        <i data-lucide="download" class="w-4 h-4"></i> Unduh Laporan (.CSV)
+                    </button>
+                </div>
+
+                <div id="admin-results-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Results rendered dynamically -->
+                </div>
+
+                <!-- Log Pemilih -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-8">
+                    <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-heading font-bold text-slate-900">Riwayat Partisipasi Murid</h3>
+                            <p class="text-xs text-slate-500">Daftar murid yang telah mengunci hak suaranya (pilihan dirahasiakan atau terenkripsi)</p>
+                        </div>
+                        <button onclick="confirmResetVotes()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg transition-colors">
+                            Reset Semua Suara
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
+                                    <th class="py-3 px-4 font-bold">Waktu</th>
+                                    <th class="py-3 px-4 font-bold">Nama Murid</th>
+                                    <th class="py-3 px-4 font-bold">Kelas</th>
+                                    <th class="py-3 px-4 font-bold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="voters-log-tbody" class="divide-y divide-slate-100 text-sm">
+                                <!-- Voter rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: MANAJEMEN DATA GURU -->
+            <div id="admin-panel-teachers" class="hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Form Tambah Guru -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit">
+                        <h3 class="font-heading font-bold text-lg text-slate-900 mb-1">Tambah Data Guru</h3>
+                        <p class="text-xs text-slate-500 mb-4">Data guru yang ditambahkan akan otomatis muncul di halaman voting murid.</p>
+                        
+                        <form onsubmit="addTeacher(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap & Gelar</label>
+                                <input type="text" id="teacher-name" required placeholder="Contoh: Drs. Budi Santoso, M.Pd." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Mata Pelajaran / Jabatan</label>
+                                <input type="text" id="teacher-subject" required placeholder="Contoh: Matematika / Wali Kelas 9A" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">NIP (Opsional)</label>
+                                <input type="text" id="teacher-nip" placeholder="19750101 200003 1 001" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                <span>Tambahkan Guru</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Daftar Guru -->
+                    <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 class="font-heading font-bold text-slate-900">Daftar Kandidat Guru SMPN 1 Kembang</h3>
+                                <p class="text-xs text-slate-500">Tersinkronisasi langsung dengan halaman pemilihan murid</p>
+                            </div>
+                            <input type="text" id="search-teacher" onkeyup="renderAdminTeachers()" placeholder="Cari nama guru..." class="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
+                                        <th class="py-3 px-4 font-bold">Guru</th>
+                                        <th class="py-3 px-4 font-bold">Mata Pelajaran</th>
+                                        <th class="py-3 px-4 font-bold">Status Kunci</th>
+                                        <th class="py-3 px-4 font-bold text-right">Aksi Admin</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-teachers-tbody" class="divide-y divide-slate-100 text-sm">
+                                    <!-- Teacher rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: MANAJEMEN KATEGORI -->
+            <div id="admin-panel-categories" class="hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Form Tambah Kategori -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit">
+                        <h3 class="font-heading font-bold text-lg text-slate-900 mb-1">Tambah Kategori Vote</h3>
+                        <p class="text-xs text-slate-500 mb-4">Buat kategori penghargaan baru untuk dipilih oleh para murid.</p>
+                        
+                        <form onsubmit="addCategory(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Kategori</label>
+                                <input type="text" id="cat-title" required placeholder="Contoh: Guru Terfavorit" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Deskripsi Kriteria</label>
+                                <textarea id="cat-desc" rows="3" required placeholder="Contoh: Guru yang paling menyenangkan, inspiratif, dan mudah dipahami saat mengajar." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm">
+                                <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                                <span>Simpan Kategori</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Daftar Kategori -->
+                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4" id="admin-categories-list">
+                        <!-- Categories cards -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: PENGATURAN GOOGLE SPREADSHEETS -->
+            <div id="admin-panel-spreadsheet" class="hidden space-y-6">
+                <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm max-w-4xl">
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                            <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-heading text-xl font-bold text-slate-900">Integrasi Database Google Spreadsheets</h3>
+                            <p class="text-sm text-slate-500 mt-1">Aplikasi ini menyimpan perubahan secara otomatis di memori perangkat dan dapat disinkronkan secara langsung ke Google Spreadsheets menggunakan Google Apps Script Web App.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 mb-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">URL Web App Google Apps Script</label>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="url" id="sheet-webhook-url" placeholder="https://script.google.com/macros/s/AKfycbx.../exec" class="flex-grow px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <button onclick="saveSheetUrl()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-sm transition-all shrink-0">
+                                    Simpan URL & Sinkron
+                                </button>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1.5">Kosongkan jika ingin menjalankan mode penyimpanan lokal otomatis (tetap tersimpan saat halaman ditutup).</p>
+                        </div>
+                    </div>
+
+                    <!-- Panduan & Kode Apps Script -->
+                    <div class="bg-slate-900 text-slate-200 rounded-2xl p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Kode Google Apps Script (Untuk Spreadsheets Anda)</span>
+                            <button onclick="copyAppsScript()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg text-white flex items-center gap-1.5 transition-colors">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Salin Kode
+                            </button>
+                        </div>
+                        <pre id="apps-script-code" class="text-xs font-mono overflow-x-auto text-slate-300 leading-relaxed p-3 bg-slate-950 rounded-xl">function doPost(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var data = JSON.parse(e.postData.contents);
+  
+  // 1. Sheet Data Guru
+  var sheetGuru = ss.getSheetByName("Data_Guru") || ss.insertSheet("Data_Guru");
+  sheetGuru.clear();
+  sheetGuru.appendRow(["ID", "Nama Guru", "Mata Pelajaran", "NIP", "Status Kunci"]);
+  data.teachers.forEach(function(t) {
+    sheetGuru.appendRow([t.id, t.name, t.subject, t.nip || "-", data.isLocked ? "TERKUNCI" : "AKTIF"]);
+  });
+
+  // 2. Sheet Kategori
+  var sheetKat = ss.getSheetByName("Kategori") || ss.insertSheet("Kategori");
+  sheetKat.clear();
+  sheetKat.appendRow(["ID", "Nama Kategori", "Deskripsi"]);
+  data.categories.forEach(function(c) {
+    sheetKat.appendRow([c.id, c.title, c.description]);
+  });
+
+  // 3. Sheet Hasil Vote
+  var sheetVote = ss.getSheetByName("Hasil_Vote") || ss.insertSheet("Hasil_Vote");
+  sheetVote.clear();
+  sheetVote.appendRow(["Waktu", "Nama Murid", "Kelas", "Detail Pilihan (JSON)"]);
+  data.votes.forEach(function(v) {
+    sheetVote.appendRow([v.timestamp, v.studentName, v.studentClass, JSON.stringify(v.choices)]);
+  });
+
+  return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  // Mengembalikan status koneksi aktif
+  return ContentService.createTextOutput(JSON.stringify({status: "connected", school: "SMPN 1 Kembang"})).setMimeType(ContentService.MimeType.JSON);
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-5 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+            <p>© 2026 Panitia Hari Guru Nasional • <strong>SMP Negeri 1 Kembang</strong></p>
+            <p>Sistem E-Voting Terintegrasi & Tersinkronisasi</p>
+        </div>
+    </footer>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        // ==================== KONSTANTA & STATE APLIKASI ====================
+        const STORAGE_KEY = 'smpn1kembang_hgn_vote_v1';
+        const ADMIN_SECRET_PIN = '654321'; // PIN tidak pernah dirender ke DOM
+
+        // Data Awal (Default jika baru pertama kali dibuka)
+        const defaultState = {
+            isLocked: false,
+            sheetUrl: '',
+            lastSync: new Date().toLocaleString('id-ID'),
+            categories: [
+                {
+                    id: 'cat_1',
+                    title: 'Guru Paling Inspiratif',
+                    description: 'Guru yang selalu memberikan motivasi, teladan positif, dan membangkitkan semangat belajar siswa.'
+                },
+                {
+                    id: 'cat_2',
+                    title: 'Guru Paling Kreatif & Inovatif',
+                    description: 'Guru dengan metode pembelajaran yang seru, interaktif, dan mudah dipahami.'
+                },
+                {
+                    id: 'cat_3',
+                    title: 'Guru Paling Sabar & Penyayang',
+                    description: 'Guru yang selalu membimbing siswa dengan penuh kesabaran, perhatian, dan keramahan.'
+                }
+            ],
+            teachers: [
+                { id: 'guru_1', name: 'Drs. H. Ahmad Fauzi, M.Pd.', subject: 'Pendidikan Agama Islam', nip: '19680512 199512 1 002' },
+                { id: 'guru_2', name: 'Siti Aminah, S.Pd.', subject: 'Bahasa Indonesia', nip: '19790817 200501 2 011' },
+                { id: 'guru_3', name: 'Bambang Wijaya, S.Si., M.Pd.', subject: 'Ilmu Pengetahuan Alam (IPA)', nip: '19820321 200801 1 007' },
+                { id: 'guru_4', name: 'Rina Kartika Sari, S.Pd.', subject: 'Bahasa Inggris', nip: '19881104 201101 2 009' },
+                { id: 'guru_5', name: 'Agus Setiawan, S.Pd.', subject: 'Matematika', nip: '19850715 200902 1 004' }
+            ],
+            votes: [] // Menyimpan { nisn, studentName, studentClass, choices: { cat_id: teacher_id }, timestamp }
+        };
+
+        let appState = loadState();
+        let currentSession = null; // { role: 'admin' | 'student', user: {...} }
+        let tempStudentChoices = {}; // Pilihan sementara murid sebelum dikunci
+
+        // ==================== MANAJEMEN PENYIMPANAN & SINKRONISASI ====================
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error("Gagal memuat state:", e);
+            }
+            return JSON.parse(JSON.stringify(defaultState));
+        }
+
+        function saveState(triggerCloudSync = false) {
+            try {
+                appState.lastSync = new Date().toLocaleString('id-ID');
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                updateSyncIndicator('saved');
+                
+                if (triggerCloudSync && appState.sheetUrl) {
+                    syncWithSpreadsheet(false);
+                }
+            } catch (e) {
+                showToast('Gagal menyimpan perubahan ke penyimpanan lokal.', 'error');
+            }
+        }
+
+        async function syncWithSpreadsheet(manualTrigger = false) {
+            const syncIcon = document.getElementById('icon-sync-btn');
+            if (syncIcon) syncIcon.classList.add('animate-spin');
+            updateSyncIndicator('syncing');
+
+            // Simpan lokal terlebih dahulu
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+
+            if (manualTrigger) {
+                // Ketika admin menekan tombol "Sinkronkan & Kunci Data", kunci data agar tidak bisa dihapus sembarangan
+                appState.isLocked = true;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                updateLockUI();
+            }
+
+            if (!appState.sheetUrl) {
+                setTimeout(() => {
+                    if (syncIcon) syncIcon.classList.remove('animate-spin');
+                    updateSyncIndicator('saved');
+                    if (manualTrigger) {
+                        showToast('Data berhasil disinkronkan & dikunci di penyimpanan sistem!', 'success');
+                        renderAdminAll();
+                    }
+                }, 500);
+                return;
+            }
+
+            try {
+                // Kirim data ke Google Apps Script Web App
+                await fetch(appState.sheetUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', // Diperlukan untuk Google Apps Script Web App
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(appState)
+                });
+
+                updateSyncIndicator('cloud');
+                if (manualTrigger) {
+                    showToast('Data berhasil disinkronkan ke Google Spreadsheets & Terkunci!', 'success');
+                    renderAdminAll();
+                }
+            } catch (error) {
+                console.error('Spreadsheet sync error:', error);
+                updateSyncIndicator('error');
+                if (manualTrigger) {
+                    showToast('Tersimpan lokal, namun gagal terhubung ke URL Spreadsheet. Periksa URL Anda.', 'warning');
+                }
+            } finally {
+                if (syncIcon) syncIcon.classList.remove('animate-spin');
+            }
+        }
+
+        function updateSyncIndicator(status) {
+            const badge = document.getElementById('sync-badge');
+            const text = document.getElementById('sync-text');
+            if (!badge || !text) return;
+
+            if (status === 'syncing') {
+                badge.className = 'hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200';
+                text.textContent = 'Menyinkronkan...';
+            } else if (status === 'cloud') {
+                badge.className = 'hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
+                text.textContent = 'Tersinkron (Sheet & Lokal)';
+            } else if (status === 'error') {
+                badge.className = 'hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200';
+                text.textContent = 'Tersimpan Lokal';
+            } else {
+                badge.className = 'hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
+                text.textContent = 'Data Tersimpan';
+            }
+        }
+
+        // Sinkronisasi antar tab browser secara real-time
+        window.addEventListener('storage', (e) => {
+            if (e.key === STORAGE_KEY) {
+                appState = loadState();
+                if (currentSession?.role === 'student') {
+                    renderStudentView();
+                } else if (currentSession?.role === 'admin') {
+                    renderAdminAll();
+                }
+            }
+        });
+
+        // ==================== SISTEM LOGIN & NAVIGASI ====================
+        function switchLoginTab(tab) {
+            const tabStudent = document.getElementById('tab-student');
+            const tabAdmin = document.getElementById('tab-admin');
+            const formStudent = document.getElementById('form-login-student');
+            const formAdmin = document.getElementById('form-login-admin');
+
+            if (tab === 'student') {
+                tabStudent.className = 'py-2.5 text-sm font-semibold rounded-lg bg-white text-blue-600 shadow-sm transition-all flex items-center justify-center gap-2';
+                tabAdmin.className = 'py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-2';
+                formStudent.classList.remove('hidden');
+                formAdmin.classList.add('hidden');
+            } else {
+                tabAdmin.className = 'py-2.5 text-sm font-semibold rounded-lg bg-white text-indigo-600 shadow-sm transition-all flex items-center justify-center gap-2';
+                tabStudent.className = 'py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-2';
+                formAdmin.classList.remove('hidden');
+                formStudent.classList.add('hidden');
+            }
+        }
+
+        function loginStudent(e) {
+            e.preventDefault();
+            const name = document.getElementById('student-name').value.trim();
+            const studentClass = document.getElementById('student-class').value;
+
+            if (!name || !studentClass) return;
+
+            currentSession = {
+                role: 'student',
+                user: { name, studentClass }
+            };
+
+            // Cek apakah murid (berdasarkan Nama & Kelas) sudah pernah memilih sebelumnya
+            const existingVote = appState.votes.find(v => 
+                v.studentName.toLowerCase() === name.toLowerCase() && v.studentClass === studentClass
+            );
+            if (existingVote) {
+                tempStudentChoices = { ...existingVote.choices };
+            } else {
+                tempStudentChoices = {};
+            }
+
+            updateNavbarSession();
+            showView('student');
+            renderStudentView();
+            showToast(`Selamat datang, ${name}!`, 'success');
+        }
+
+        function loginAdmin(e) {
+            e.preventDefault();
+            const pinInput = document.getElementById('admin-pin').value.trim();
+
+            if (pinInput === ADMIN_SECRET_PIN) {
+                document.getElementById('admin-pin').value = '';
+                currentSession = {
+                    role: 'admin',
+                    user: { name: 'Panitia HGN', roleLabel: 'Administrator' }
+                };
+                updateNavbarSession();
+                showView('admin');
+                renderAdminAll();
+                showToast('Otorisasi berhasil. Selamat datang di Dasbor Admin.', 'success');
+            } else {
+                document.getElementById('admin-pin').value = '';
+                showToast('PIN Keamanan Admin salah! Akses ditolak.', 'error');
+            }
+        }
+
+        function handleLogout() {
+            // Pastikan semua perubahan tersimpan sebelum keluar halaman
+            saveState(true);
+            currentSession = null;
+            tempStudentChoices = {};
+            
+            document.getElementById('nav-user-section').classList.add('hidden');
+            document.getElementById('nav-user-section').classList.remove('flex');
+            showView('login');
+            showToast('Anda telah keluar. Semua data tetap tersimpan aman.', 'info');
+        }
+
+        function updateNavbarSession() {
+            const navSection = document.getElementById('nav-user-section');
+            const navName = document.getElementById('nav-user-name');
+            const navRole = document.getElementById('nav-user-role');
+
+            if (currentSession) {
+                navSection.classList.remove('hidden');
+                navSection.classList.add('flex');
+                if (currentSession.role === 'admin') {
+                    navName.textContent = 'Administrator HGN';
+                    navRole.textContent = 'Panitia SMPN 1 Kembang';
+                } else {
+                    navName.textContent = currentSession.user.name;
+                    navRole.textContent = `Kelas ${currentSession.user.studentClass}`;
+                }
+            }
+        }
+
+        function showView(viewName) {
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-student').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // ==================== LOGIKA HALAMAN VOTE MURID ====================
+        function renderStudentView() {
+            if (!currentSession || currentSession.role !== 'student') return;
+
+            // Muat ulang data terbaru dari storage agar sinkron dengan perubahan admin
+            appState = loadState();
+
+            const { name, studentClass } = currentSession.user;
+            document.getElementById('display-student-name').textContent = name;
+            document.getElementById('display-student-class').textContent = studentClass;
+
+            const existingVote = appState.votes.find(v => 
+                v.studentName.toLowerCase() === name.toLowerCase() && v.studentClass === studentClass
+            );
+            const isVoted = Boolean(existingVote);
+
+            const statusIndicator = document.getElementById('student-status-indicator');
+            const lockedBanner = document.getElementById('student-locked-banner');
+            const submitBar = document.getElementById('student-submit-bar');
+
+            if (isVoted) {
+                tempStudentChoices = { ...existingVote.choices };
+                statusIndicator.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="font-bold text-sm">Suara Terkunci (${existingVote.timestamp})</span>`;
+                lockedBanner.classList.remove('hidden');
+                submitBar.classList.add('hidden');
+            } else {
+                statusIndicator.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span><span class="font-bold text-sm">Silakan Pilih Kandidat</span>`;
+                lockedBanner.classList.add('hidden');
+                submitBar.classList.remove('hidden');
+            }
+
+            const container = document.getElementById('student-categories-container');
+            container.innerHTML = '';
+
+            if (appState.categories.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-200">
+                        <p class="text-slate-500 font-medium">Belum ada kategori pemilihan yang dibuka oleh panitia.</p>
+                    </div>`;
+                return;
+            }
+
+            appState.categories.forEach((cat, idx) => {
+                const selectedTeacherId = tempStudentChoices[cat.id];
+
+                let teachersHtml = '';
+                if (appState.teachers.length === 0) {
+                    teachersHtml = `<p class="text-sm text-slate-400 italic col-span-full">Belum ada data guru yang ditambahkan.</p>`;
+                } else {
+                    appState.teachers.forEach(teacher => {
+                        const isSelected = selectedTeacherId === teacher.id;
+                        const initials = getInitials(teacher.name);
+
+                        teachersHtml += `
+                            <div onclick="${isVoted ? '' : `selectTeacherForCategory('${cat.id}', '${teacher.id}')`}" 
+                                 class="group relative rounded-2xl p-4 border-2 transition-all ${isVoted ? 'cursor-default' : 'cursor-pointer hover:shadow-md'} ${
+                                    isSelected 
+                                    ? 'border-blue-600 bg-blue-50/60 shadow-sm' 
+                                    : 'border-slate-200 bg-white hover:border-blue-300'
+                                 }">
+                                <div class="flex items-center gap-3.5">
+                                    <div class="w-12 h-12 rounded-xl flex items-center justify-center font-heading font-bold text-sm shrink-0 transition-colors ${
+                                        isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 group-hover:bg-blue-100 group-hover:text-blue-700'
+                                    }">
+                                        ${initials}
+                                    </div>
+                                    <div class="min-w-0 flex-grow">
+                                        <h4 class="font-bold text-slate-900 text-sm truncate">${escapeHtml(teacher.name)}</h4>
+                                        <p class="text-xs text-slate-500 truncate mt-0.5">${escapeHtml(teacher.subject)}</p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                                            isSelected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300'
+                                        }">
+                                            ${isSelected ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                const categoryCard = `
+                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-5 sm:p-6 border-b border-slate-100 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2.5 py-0.5 rounded-lg bg-blue-100 text-blue-700 text-xs font-bold">Kategori #${idx + 1}</span>
+                                    <h3 class="font-heading text-lg font-bold text-slate-900">${escapeHtml(cat.title)}</h3>
+                                </div>
+                                <p class="text-xs sm:text-sm text-slate-500 mt-1">${escapeHtml(cat.description)}</p>
+                            </div>
+                            ${selectedTeacherId ? `<span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 self-start sm:self-center"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Terpilih</span>` : `<span class="text-xs font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 self-start sm:self-center">Belum dipilih</span>`}
+                        </div>
+                        <div class="p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                            ${teachersHtml}
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', categoryCard);
+            });
+
+            updateStudentVoteProgress();
+            lucide.createIcons();
+        }
+
+        function selectTeacherForCategory(categoryId, teacherId) {
+            tempStudentChoices[categoryId] = teacherId;
+            renderStudentView();
+        }
+
+        function updateStudentVoteProgress() {
+            const totalCats = appState.categories.length;
+            const chosenCount = appState.categories.filter(c => tempStudentChoices[c.id]).length;
+
+            const countEl = document.getElementById('vote-progress-count');
+            const submitBtn = document.getElementById('btn-submit-vote');
+
+            if (countEl) countEl.textContent = `${chosenCount}/${totalCats}`;
+            if (submitBtn) {
+                submitBtn.disabled = (totalCats === 0 || chosenCount < totalCats);
+            }
+        }
+
+        function confirmStudentVote() {
+            const totalCats = appState.categories.length;
+            const chosenCount = appState.categories.filter(c => tempStudentChoices[c.id]).length;
+
+            if (chosenCount < totalCats) {
+                showToast('Harap pilih guru untuk semua kategori terlebih dahulu.', 'warning');
+                return;
+            }
+
+            showModal({
+                title: 'Kunci & Kirim Pilihan Anda?',
+                message: 'Setelah dikirim, pilihan Anda akan otomatis tersinkronisasi dan <strong>TERKUNCI PERMANEN</strong>. Anda tidak dapat mengubah atau menghapus pilihan ini.',
+                confirmText: 'Ya, Kirim & Kunci Suara',
+                confirmColor: 'bg-blue-600 hover:bg-blue-700',
+                onConfirm: () => {
+                    submitStudentVote();
+                }
+            });
+        }
+
+        function submitStudentVote() {
+            const { name, studentClass } = currentSession.user;
+
+            // Pastikan tidak ada duplikasi Nama & Kelas
+            if (appState.votes.some(v => v.studentName.toLowerCase() === name.toLowerCase() && v.studentClass === studentClass)) {
+                showToast('Suara untuk murid ini sudah tercatat dan terkunci.', 'error');
+                renderStudentView();
+                return;
+            }
+
+            const newVote = {
+                studentName: name,
+                studentClass: studentClass,
+                choices: { ...tempStudentChoices },
+                timestamp: new Date().toLocaleString('id-ID')
+            };
+
+            appState.votes.push(newVote);
+            saveState(true); // Simpan & sinkronkan ke spreadsheets
+            renderStudentView();
+            showToast('Suara Anda berhasil dikirim, disinkronkan, dan dikunci!', 'success');
+        }
+
+        // ==================== LOGIKA DASBOR ADMIN ====================
+        function switchAdminTab(tabName) {
+            const tabs = ['results', 'teachers', 'categories', 'spreadsheet'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`admin-tab-${t}`);
+                const panel = document.getElementById(`admin-panel-${t}`);
+                if (t === tabName) {
+                    btn.className = 'admin-nav-btn px-4 py-2.5 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap flex items-center gap-2';
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.className = 'admin-nav-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-2';
+                    panel.classList.add('hidden');
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function renderAdminAll() {
+            appState = loadState();
+            
+            // Update stats
+            document.getElementById('stat-total-teachers').textContent = appState.teachers.length;
+            document.getElementById('stat-total-categories').textContent = appState.categories.length;
+            document.getElementById('stat-total-voters').textContent = appState.votes.length;
+            document.getElementById('stat-sheet-status').textContent = appState.sheetUrl ? 'Terhubung ke Cloud' : 'Penyimpanan Lokal Aktif';
+            document.getElementById('sheet-webhook-url').value = appState.sheetUrl || '';
+
+            updateLockUI();
+            renderAdminResults();
+            renderAdminTeachers();
+            renderAdminCategories();
+            lucide.createIcons();
+        }
+
+        function updateLockUI() {
+            const lockBadge = document.getElementById('global-lock-badge');
+            const toggleBtn = document.getElementById('btn-toggle-lock');
+
+            if (appState.isLocked) {
+                lockBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1';
+                lockBadge.innerHTML = `<i data-lucide="lock" class="w-3 h-3"></i> Data Terkunci (Sinkron)`;
+                toggleBtn.innerHTML = `<i data-lucide="unlock" class="w-4 h-4"></i> <span>Buka Kunci Admin</span>`;
+                toggleBtn.className = 'px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2';
+            } else {
+                lockBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1';
+                lockBadge.innerHTML = `<i data-lucide="unlock" class="w-3 h-3"></i> Mode Kelola Aktif`;
+                toggleBtn.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i> <span>Kunci Data Sistem</span>`;
+                toggleBtn.className = 'px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2';
+            }
+            lucide.createIcons();
+        }
+
+        function toggleSystemLock() {
+            appState.isLocked = !appState.isLocked;
+            saveState(true);
+            renderAdminAll();
+            showToast(appState.isLocked ? 'Data sistem telah dikunci.' : 'Kunci data dibuka untuk pengeditan admin.', 'info');
+        }
+
+        // --- Admin: Tambah & Hapus Guru ---
+        function addTeacher(e) {
+            e.preventDefault();
+            const name = document.getElementById('teacher-name').value.trim();
+            const subject = document.getElementById('teacher-subject').value.trim();
+            const nip = document.getElementById('teacher-nip').value.trim();
+
+            if (!name || !subject) return;
+
+            const newTeacher = {
+                id: 'guru_' + Date.now(),
+                name,
+                subject,
+                nip
+            };
+
+            appState.teachers.push(newTeacher);
+            saveState(true);
+
+            document.getElementById('teacher-name').value = '';
+            document.getElementById('teacher-subject').value = '';
+            document.getElementById('teacher-nip').value = '';
+
+            renderAdminAll();
+            showToast(`Guru "${name}" berhasil ditambahkan dan disinkronkan!`, 'success');
+        }
+
+        function deleteTeacher(teacherId) {
+            const teacher = appState.teachers.find(t => t.id === teacherId);
+            if (!teacher) return;
+
+            const lockWarning = appState.isLocked 
+                ? '<br><span class="text-rose-600 font-semibold">Catatan: Data saat ini berstatus TERKUNCI, namun Anda memiliki otoritas Admin untuk menghapusnya.</span>' 
+                : '';
+
+            showModal({
+                title: 'Hapus Data Guru?',
+                message: `Apakah Anda yakin ingin menghapus <strong>${escapeHtml(teacher.name)}</strong> dari daftar kandidat? Data pada halaman vote murid akan otomatis diperbarui.${lockWarning}`,
+                confirmText: 'Ya, Hapus Guru',
+                confirmColor: 'bg-rose-600 hover:bg-rose-700',
+                onConfirm: () => {
+                    appState.teachers = appState.teachers.filter(t => t.id !== teacherId);
+                    saveState(true);
+                    renderAdminAll();
+                    showToast(`Data guru "${teacher.name}" telah dihapus.`, 'info');
+                }
+            });
+        }
+
+        function renderAdminTeachers() {
+            const tbody = document.getElementById('admin-teachers-tbody');
+            const search = (document.getElementById('search-teacher')?.value || '').toLowerCase();
+            tbody.innerHTML = '';
+
+            const filtered = appState.teachers.filter(t => 
+                t.name.toLowerCase().includes(search) || t.subject.toLowerCase().includes(search)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 text-sm">Tidak ada data guru ditemukan.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(teacher => {
+                const row = `
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
+                                    ${getInitials(teacher.name)}
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-900">${escapeHtml(teacher.name)}</p>
+                                    <p class="text-[11px] text-slate-400">${teacher.nip ? 'NIP: ' + escapeHtml(teacher.nip) : 'Guru SMPN 1 Kembang'}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-600 font-medium">${escapeHtml(teacher.subject)}</td>
+                        <td class="py-3.5 px-4">
+                            ${appState.isLocked 
+                                ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200"><i data-lucide="lock" class="w-3 h-3"></i> Terkunci</span>'
+                                : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><i data-lucide="check" class="w-3 h-3"></i> Tersinkron</span>'
+                            }
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <button onclick="deleteTeacher('${teacher.id}')" class="p-2 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors" title="Hapus Guru (Khusus Admin)">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+            lucide.createIcons();
+        }
+
+        // --- Admin: Tambah & Hapus Kategori ---
+        function addCategory(e) {
+            e.preventDefault();
+            const title = document.getElementById('cat-title').value.trim();
+            const description = document.getElementById('cat-desc').value.trim();
+
+            if (!title || !description) return;
+
+            const newCat = {
+                id: 'cat_' + Date.now(),
+                title,
+                description
+            };
+
+            appState.categories.push(newCat);
+            saveState(true);
+
+            document.getElementById('cat-title').value = '';
+            document.getElementById('cat-desc').value = '';
+
+            renderAdminAll();
+            showToast(`Kategori "${title}" berhasil ditambahkan!`, 'success');
+        }
+
+        function deleteCategory(catId) {
+            const cat = appState.categories.find(c => c.id === catId);
+            if (!cat) return;
+
+            showModal({
+                title: 'Hapus Kategori Pemilihan?',
+                message: `Anda akan menghapus kategori <strong>${escapeHtml(cat.title)}</strong>. Perubahan ini akan langsung diterapkan pada halaman vote murid.`,
+                confirmText: 'Ya, Hapus Kategori',
+                confirmColor: 'bg-rose-600 hover:bg-rose-700',
+                onConfirm: () => {
+                    appState.categories = appState.categories.filter(c => c.id !== catId);
+                    saveState(true);
+                    renderAdminAll();
+                    showToast(`Kategori "${cat.title}" berhasil dihapus.`, 'info');
+                }
+            });
+        }
+
+        function renderAdminCategories() {
+            const container = document.getElementById('admin-categories-list');
+            container.innerHTML = '';
+
+            if (appState.categories.length === 0) {
+                container.innerHTML = `<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-sm">Belum ada kategori pemilihan.</div>`;
+                return;
+            }
+
+            appState.categories.forEach((cat, index) => {
+                const card = `
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between gap-4">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <span class="px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">Kategori #${index + 1}</span>
+                                <button onclick="deleteCategory('${cat.id}')" class="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors" title="Hapus Kategori">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <h4 class="font-heading font-bold text-slate-900 text-base">${escapeHtml(cat.title)}</h4>
+                            <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">${escapeHtml(cat.description)}</p>
+                        </div>
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                            <span>Tampil di halaman murid</span>
+                            <span class="text-emerald-600 font-semibold flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Aktif</span>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', card);
+            });
+            lucide.createIcons();
+        }
+
+        // --- Admin: Hasil Voting (Hanya Admin) ---
+        function renderAdminResults() {
+            const container = document.getElementById('admin-results-container');
+            container.innerHTML = '';
+
+            const totalVoters = appState.votes.length;
+
+            appState.categories.forEach(cat => {
+                // Hitung perolehan suara setiap guru pada kategori ini
+                const tally = {};
+                appState.teachers.forEach(t => tally[t.id] = 0);
+
+                appState.votes.forEach(v => {
+                    const chosenTeacherId = v.choices[cat.id];
+                    if (chosenTeacherId && tally[chosenTeacherId] !== undefined) {
+                        tally[chosenTeacherId]++;
+                    }
+                });
+
+                // Urutkan guru berdasarkan suara terbanyak
+                const sortedTeachers = [...appState.teachers].sort((a, b) => (tally[b.id] || 0) - (tally[a.id] || 0));
+
+                let barsHtml = '';
+                sortedTeachers.forEach((teacher, idx) => {
+                    const count = tally[teacher.id] || 0;
+                    const percentage = totalVoters > 0 ? Math.round((count / totalVoters) * 100) : 0;
+                    const isWinner = idx === 0 && count > 0;
+
+                    barsHtml += `
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    ${isWinner ? '<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">#1</span>' : `<span class="text-slate-400 font-semibold w-5">#${idx + 1}</span>`}
+                                    <span class="font-bold text-slate-800 truncate">${escapeHtml(teacher.name)}</span>
+                                </div>
+                                <span class="font-bold text-slate-700 shrink-0 ml-2">${count} suara (${percentage}%)</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all duration-500 ${isWinner ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-indigo-600'}" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                const card = `
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                        <div class="flex items-start justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+                            <div>
+                                <h4 class="font-heading font-bold text-slate-900 text-base">${escapeHtml(cat.title)}</h4>
+                                <p class="text-xs text-slate-500">Total suara masuk: ${totalVoters} pemilih</p>
+                            </div>
+                            <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                <i data-lucide="trophy" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="space-y-3.5 max-h-72 overflow-y-auto pr-1">
+                            ${barsHtml || '<p class="text-xs text-slate-400">Belum ada kandidat guru.</p>'}
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', card);
+            });
+
+            // Render Tabel Riwayat Pemilih
+            const votersTbody = document.getElementById('voters-log-tbody');
+            votersTbody.innerHTML = '';
+
+            if (appState.votes.length === 0) {
+                votersTbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-400 text-xs">Belum ada murid yang melakukan voting.</td></tr>`;
+            } else {
+                [...appState.votes].reverse().forEach(v => {
+                    votersTbody.insertAdjacentHTML('beforeend', `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-3 px-4 text-xs text-slate-500">${escapeHtml(v.timestamp)}</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">${escapeHtml(v.studentName)}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs font-bold">${escapeHtml(v.studentClass)}</span></td>
+                            <td class="py-3 px-4"><span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600"><i data-lucide="lock" class="w-3 h-3"></i> Suara Terkunci</span></td>
+                        </tr>
+                    `);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        function confirmResetVotes() {
+            showModal({
+                title: 'Reset Seluruh Data Suara?',
+                message: 'Tindakan ini akan menghapus seluruh suara masuk dari murid sehingga pemilihan dapat dimulai ulang dari nol. Data guru dan kategori tidak akan terhapus.',
+                confirmText: 'Ya, Reset Suara',
+                confirmColor: 'bg-rose-600 hover:bg-rose-700',
+                onConfirm: () => {
+                    appState.votes = [];
+                    saveState(true);
+                    renderAdminAll();
+                    showToast('Seluruh perolehan suara telah direset.', 'info');
+                }
+            });
+        }
+
+        // --- Admin: Spreadsheets & Ekspor ---
+        function saveSheetUrl() {
+            const url = document.getElementById('sheet-webhook-url').value.trim();
+            appState.sheetUrl = url;
+            saveState(true);
+            renderAdminAll();
+            showToast(url ? 'URL Spreadsheets disimpan & disinkronkan!' : 'URL dikosongkan. Menggunakan penyimpanan lokal.', 'success');
+        }
+
+        function copyAppsScript() {
+            const code = document.getElementById('apps-script-code').textContent;
+            const textArea = document.createElement('textarea');
+            textArea.value = code;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('Kode Google Apps Script berhasil disalin!', 'success');
+        }
+
+        function exportResultsCSV() {
+            let csv = 'Kategori,Peringkat,Nama Guru,Mata Pelajaran,Jumlah Suara,Persentase\n';
+            const totalVoters = appState.votes.length;
+
+            appState.categories.forEach(cat => {
+                const tally = {};
+                appState.teachers.forEach(t => tally[t.id] = 0);
+                appState.votes.forEach(v => {
+                    const tid = v.choices[cat.id];
+                    if (tid && tally[tid] !== undefined) tally[tid]++;
+                });
+
+                const sorted = [...appState.teachers].sort((a, b) => (tally[b.id] || 0) - (tally[a.id] || 0));
+                sorted.forEach((t, idx) => {
+                    const count = tally[t.id] || 0;
+                    const pct = totalVoters > 0 ? ((count / totalVoters) * 100).toFixed(1) : '0.0';
+                    csv += `"${cat.title}",${idx + 1},"${t.name}","${t.subject}",${count},${pct}%\n`;
+                });
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Hasil_Vote_HGN_SMPN1Kembang_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Laporan hasil voting (.CSV) berhasil diunduh.', 'success');
+        }
+
+        // ==================== UTILITAS UI (TOAST, MODAL, HELPER) ====================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const styles = {
+                success: 'bg-emerald-600 text-white border-emerald-700',
+                error: 'bg-rose-600 text-white border-rose-700',
+                warning: 'bg-amber-500 text-white border-amber-600',
+                info: 'bg-slate-800 text-white border-slate-900'
+            };
+
+            const icons = {
+                success: 'check-circle',
+                error: 'alert-circle',
+                warning: 'alert-triangle',
+                info: 'info'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-xs sm:text-sm font-medium transform transition-all duration-300 translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                <i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0"></i>
+                <span class="flex-grow">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function showModal({ title, message, confirmText = 'Konfirmasi', confirmColor = 'bg-blue-600 hover:bg-blue-700', onConfirm }) {
+            const overlay = document.getElementById('modal-overlay');
+            const content = document.getElementById('modal-content');
+
+            content.innerHTML = `
+                <h3 class="font-heading text-lg font-bold text-slate-900">${title}</h3>
+                <p class="text-sm text-slate-600 mt-2 leading-relaxed">${message}</p>
+                <div class="flex items-center justify-end gap-2.5 mt-6">
+                    <button id="modal-cancel-btn" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">Batal</button>
+                    <button id="modal-confirm-btn" class="px-4 py-2 rounded-xl ${confirmColor} text-white text-xs font-bold shadow-sm transition-colors">${confirmText}</button>
+                </div>
+            `;
+
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            requestAnimationFrame(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+            });
+
+            const closeModal = () => {
+                content.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('flex');
+                }, 150);
+            };
+
+            document.getElementById('modal-cancel-btn').onclick = closeModal;
+            document.getElementById('modal-confirm-btn').onclick = () => {
+                closeModal();
+                if (onConfirm) onConfirm();
+            };
+        }
+
+        function getInitials(name) {
+            const clean = name.replace(/^(Drs\.|Dra\.|H\.|Hj\.|Prof\.)\s+/gi, '');
+            const parts = clean.split(' ');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            return clean.substring(0, 2).toUpperCase();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // ==================== INISIALISASI SAAT HALAMAN DIMUAT ====================
+        window.addEventListener('beforeunload', () => {
+            // Pastikan state tersimpan saat halaman ditutup atau di-refresh
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        });
+
+        window.onload = function() {
+            lucide.createIcons();
+            updateSyncIndicator(appState.sheetUrl ? 'cloud' : 'saved');
+        };
+    </script>
+</body>
+</html>
